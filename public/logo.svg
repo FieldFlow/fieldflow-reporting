@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <!-- Curved Flow Line -->
+  <path d="M50 250 Q 200 100 350 250" fill="none" stroke="#4299e1" stroke-width="16"/>
+
+  <!-- Field Circles -->
+  <circle cx="100" cy="250" r="10" fill="#48cae4"/>
+  <circle cx="300" cy="250" r="10" fill="#48cae4"/>
+</svg>
