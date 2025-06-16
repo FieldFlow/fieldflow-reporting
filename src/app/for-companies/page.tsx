@@ -14,7 +14,7 @@ import { abi as esgRegistryABI } from '../../../public/VersionedPersonalESGRegis
 import { client } from "@/app/client";
 
 // --- КОНФИГУРАЦИЯ КОНТРАКТА ---
-const CONTRACT_ADDRESS = "0xA0a3b1BAAab579795d31f379bC7Cf32dC8e10eF8";
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT;
 const CHAIN_ID = 44787; // Celo Alfajores Testnet
 
 // --- MAPPING STRING KPI IDs TO NUMERIC FOR THE CONTRACT ---
@@ -178,10 +178,11 @@ function useKpiEventWatcher(contract: ThirdwebContract<typeof esgRegistryABI> | 
                         // --- ДЕТАЛЬНОЕ ЛОГИРОВАНИЕ СРАВНЕНИЙ ---
                         console.log("--- Детальное сравнение параметров события ---");
                         // 1. Сравнение kpiOwner - ИСПРАВЛЕНО
-                        // Используем hexStripZeros для получения корректного адреса из 32-байтового топика
-                        const receivedKpiOwner = (kpiOwnerTopic ? ethers.utils.getAddress(ethers.utils.hexStripZeros(kpiOwnerTopic)).toLowerCase() : '');
-                        const ownerMatch = receivedKpiOwner === ownerAddress.toLowerCase();
-                        console.log(`kpiOwner: Ожидалось: ${ownerAddress.toLowerCase()}, Получено: ${receivedKpiOwner}, Совпадение: ${ownerMatch}`);
+                        // Ожидаемый адрес, дополненный нулями до 32 байт, для сравнения с топиком
+                        const expectedOwnerTopic = ethers.utils.hexZeroPad(ownerAddress.toLowerCase(), 32).toLowerCase();
+                        const receivedKpiOwnerTopic = parsedEventData.kpiOwner.toLowerCase();
+                        const ownerMatch = receivedKpiOwnerTopic === expectedOwnerTopic;
+                        console.log(`kpiOwner: Ожидалось (topic): ${expectedOwnerTopic}, Получено (topic): ${receivedKpiOwnerTopic}, Совпадение: ${ownerMatch}`);
 
                         // 2. Сравнение kpiTypeId
                         const kpiTypeMatch = kpiTypeIdFromEvent.eq(expectedKpiTypeId);
@@ -255,7 +256,7 @@ function useKpiSubmission(contract: ThirdwebContract<typeof esgRegistryABI> | un
 
         // Добавляем транзакцию для текущего года
         if (!isNaN(currentValue)) {
-            const valueBN = ethers.BigNumber.from(Math.round(currentValue * 100)); // Умножаем на 100 для сохранения точности
+            const valueBN = ethers.BigNumber.from(Math.round(currentValue));
             const kpiTypeIdBN = ethers.BigNumber.from(numericKpiTypeId);
             const reportingYearBN = ethers.BigNumber.from(reportingYear);
 
@@ -274,7 +275,7 @@ function useKpiSubmission(contract: ThirdwebContract<typeof esgRegistryABI> | un
 
         // Добавляем транзакцию для предыдущего года
         if (!isNaN(priorValue)) {
-            const valueBN = ethers.BigNumber.from(Math.round(priorValue * 100)); // Умножаем на 100 для сохранения точности
+            const valueBN = ethers.BigNumber.from(Math.round(priorValue));
             const kpiTypeIdBN = ethers.BigNumber.from(numericKpiTypeId);
             const reportingYearBN = ethers.BigNumber.from(reportingYear - 1);
 
