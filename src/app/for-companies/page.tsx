@@ -8,29 +8,29 @@ import Image from 'next/image';
 import logoIcon from "../../../public/logo.svg";
 import { Tooltip } from "react-tooltip";
 
-// Импортируем JSON-файл ABI контракта
+// Import the contract ABI JSON file
 import { abi as esgRegistryABI } from '../../../public/VersionedPersonalESGRegistry.json';
-// Корректный импорт клиента Thirdweb
+// Correct Thirdweb client import
 import { client } from "@/app/client";
 
-// --- КОНФИГУРАЦИЯ КОНТРАКТА ---
+// --- CONTRACT CONFIGURATION ---
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT;
 const CHAIN_ID = 44787; // Celo Alfajores Testnet
 
 // --- MAPPING STRING KPI IDs TO NUMERIC FOR THE CONTRACT ---
-// Используем полные, читаемые идентификаторы для ясности
+// Using full, readable identifiers for clarity
 const kpiIdToNumericIdMap: Record<string, number> = {
     'GHGEmissionsScopeOneAndTwoTotal': 1,
-    // Другие KPI можно добавить здесь по мере необходимости
+    // Other KPIs can be added here as needed
 };
 
 // --- Pre-loaded IPFS CIDs for dropdowns (for PoC demonstration) ---
-// В реальном приложении эти CIDs будут указывать на реальные файлы в IPFS.
-// NOTE: Эти значения являются заглушками. В реальном приложении это будут фактические представления bytes32 IPFS CID.
-const preloadedCids: { label: string; cid: Hex }[] = []; // В текущей форме нет полей, использующих preloadedCids
+// In a real application, these CIDs would point to actual files on IPFS.
+// NOTE: These values are placeholders. In a real application these would be actual bytes32 representations of IPFS CIDs.
+const preloadedCids: { label: string; cid: Hex }[] = []; // In current form, no fields use preloadedCids
 
-// --- ТИПЫ ДАННЫХ ---
-// Тип для данных события KpiVersionSubmitted
+// --- DATA TYPES ---
+// Type for KpiVersionSubmitted event data
 type KpiVersionSubmittedEventData = {
     kpiOwner: Hex;
     kpiTypeId: bigint;
@@ -41,17 +41,17 @@ type KpiVersionSubmittedEventData = {
     version: bigint;
 };
 
-// --- КАСТОМНЫЕ ХУКИ ---
+// --- CUSTOM HOOKS ---
 
 /**
- * Хук для инициализации и получения экземпляра контракта Thirdweb.
- * @returns {ThirdwebContract<typeof esgRegistryABI> | undefined} Экземпляр контракта или undefined, если клиент не готов.
+ * Hook to initialize and get a Thirdweb contract instance.
+ * @returns {ThirdwebContract<typeof esgRegistryABI> | undefined} Contract instance or undefined if client is not ready.
  */
 function useEsgContract() {
     const [contract, setContract] = useState<ThirdwebContract<typeof esgRegistryABI>>();
 
     useEffect(() => {
-        // Убедимся, что клиент импортирован и доступен
+        // Ensure the client is imported and available
         if (client) {
             const esgContract = getContract({
                 client,
@@ -61,20 +61,20 @@ function useEsgContract() {
             }) as ThirdwebContract<typeof esgRegistryABI>;
             setContract(esgContract);
         }
-    }, []); // Зависимости отсутствуют, выполняется один раз при монтировании
+    }, []); // No dependencies, runs once on mount
 
     return contract;
 }
 
 /**
- * Хук для отслеживания и декодирования событий KpiVersionSubmitted.
- * @returns {(ownerAddress: string, expectedKpiTypeId: ethers.BigNumber, expectedReportingYear: ethers.BigNumber, expectedValue: ethers.BigNumber, expectedMetadataCid: Hex) => Promise<KpiVersionSubmittedEventData>} Функция для ожидания совпадения события.
+ * Hook for tracking and decoding KpiVersionSubmitted events.
+ * @returns {(ownerAddress: string, expectedKpiTypeId: ethers.BigNumber, expectedReportingYear: ethers.BigNumber, expectedValue: ethers.BigNumber, expectedMetadataCid: Hex) => Promise<KpiVersionSubmittedEventData>} Function to await a matching event.
  */
 function useKpiEventWatcher(contract: ThirdwebContract<typeof esgRegistryABI> | undefined) {
-    // Создаем ethers.Interface из ABI для ручного декодирования логов
+    // Create ethers.Interface from ABI for manual log decoding
     const contractInterface = new ethers.utils.Interface(esgRegistryABI);
 
-    // Находим фрагмент события KpiVersionSubmitted в ABI
+    // Find the KpiVersionSubmitted event fragment in the ABI
     const kpiVersionSubmittedEventAbiFragment = esgRegistryABI.find(
         (item: any) => item.type === "event" && item.name === "KpiVersionSubmitted"
     ) as AbiEvent | undefined;
@@ -85,14 +85,14 @@ function useKpiEventWatcher(contract: ThirdwebContract<typeof esgRegistryABI> | 
         expectedReportingYear: ethers.BigNumber,
         expectedValue: ethers.BigNumber,
         expectedMetadataCid: Hex,
-        timeoutMs: number = 90000 // Таймаут по умолчанию 90 секунд
+        timeoutMs: number = 90000 // Default timeout 90 seconds
     ): Promise<KpiVersionSubmittedEventData> => {
         return new Promise((resolve, reject) => {
             if (!contract) {
-                return reject(new Error("Контракт не инициализирован. Невозможно отслеживать события."));
+                return reject(new Error("Contract not initialized. Cannot watch events."));
             }
             if (!kpiVersionSubmittedEventAbiFragment) {
-                return reject(new Error("Определение события KpiVersionSubmitted не найдено в ABI."));
+                return reject(new Error("KpiVersionSubmitted event definition not found in ABI."));
             }
 
             let unwatch: (() => void) | undefined;
@@ -101,26 +101,26 @@ function useKpiEventWatcher(contract: ThirdwebContract<typeof esgRegistryABI> | 
             const cleanup = () => {
                 if (timeoutId) clearTimeout(timeoutId);
                 if (unwatch) {
-                    console.log("Остановка наблюдателя событий по совпадению или таймауту.");
+                    console.log("Stopping event watcher due to match or timeout.");
                     unwatch();
                 }
             };
 
             timeoutId = setTimeout(() => {
-                console.warn(`Таймаут (${timeoutMs / 1000}с) ожидания события KpiVersionSubmitted. Ожидалось: KPI Type ID: ${expectedKpiTypeId.toString()}, Год: ${expectedReportingYear.toString()}, Значение: ${expectedValue.toString()}`);
+                console.warn(`Timeout (${timeoutMs / 1000}s) waiting for KpiVersionSubmitted event. Expected: KPI Type ID: ${expectedKpiTypeId.toString()}, Year: ${expectedReportingYear.toString()}, Value: ${expectedValue.toString()}`);
                 cleanup();
-                reject(new Error(`Таймаут (${timeoutMs / 1000}с) ожидания события KpiVersionSubmitted для KPI Type ID: ${expectedKpiTypeId.toString()}, Год: ${expectedReportingYear.toString()}`));
+                reject(new Error(`Timeout (${timeoutMs / 1000}s) waiting for KpiVersionSubmitted event for KPI Type ID: ${expectedKpiTypeId.toString()}, Year: ${expectedReportingYear.toString()}`));
             }, timeoutMs);
 
-            console.log(`Начинаем отслеживание события KpiVersionSubmitted. Владелец: ${ownerAddress}, Тип KPI: ${expectedKpiTypeId.toString()}, Год: ${expectedReportingYear.toString()}, Значение: ${expectedValue.toString()}, CID метаданных: ${expectedMetadataCid}`);
+            console.log(`Starting KpiVersionSubmitted event watch. Owner: ${ownerAddress}, KPI Type: ${expectedKpiTypeId.toString()}, Year: ${expectedReportingYear.toString()}, Value: ${expectedValue.toString()}, Metadata CID: ${expectedMetadataCid}`);
 
             unwatch = watchContractEvents({
                 contract: contract,
                 events: [kpiVersionSubmittedEventAbiFragment],
                 onEvents: (events) => {
-                    console.log(`Наблюдатель событий получил ${events.length} событие(й).`);
+                    console.log(`Event watcher received ${events.length} event(s).`);
                     for (const event of events) {
-                        console.log("Получен полный объект события:", event);
+                        console.log("Received full event object:", event);
 
                         let parsedEventData: KpiVersionSubmittedEventData | undefined;
                         let kpiOwnerTopic: Hex | undefined;
@@ -130,7 +130,7 @@ function useKpiEventWatcher(contract: ThirdwebContract<typeof esgRegistryABI> | 
                         try {
                             const eventFragment = contractInterface.getEvent("KpiVersionSubmitted");
                             if (!eventFragment) {
-                                throw new Error("Не удалось найти фрагмент события для KpiVersionSubmitted.");
+                                throw new Error("Failed to find event fragment for KpiVersionSubmitted.");
                             }
 
                             const nonIndexedInputs = eventFragment.inputs.filter(input => !input.indexed);
@@ -141,7 +141,7 @@ function useKpiEventWatcher(contract: ThirdwebContract<typeof esgRegistryABI> | 
                                 event.data
                             );
 
-                            // Индексированные параметры берутся из topics
+                            // Indexed parameters are taken from topics
                             // kpiOwner - topic1, reportingYear - topic2, metadataCid - topic3
                             kpiOwnerTopic = event.topics[1];
                             reportingYearTopic = event.topics[2];
@@ -157,48 +157,48 @@ function useKpiEventWatcher(contract: ThirdwebContract<typeof esgRegistryABI> | 
                                 version: decodedData[3] as bigint
                             };
 
-                            console.log("Данные события декодированы вручную с использованием defaultAbiCoder:", parsedEventData);
+                            console.log("Event data manually decoded using defaultAbiCoder:", parsedEventData);
                         } catch (parseError) {
-                            console.error("Ошибка при ручном декодировании лога события:", parseError, event);
+                            console.error("Error manually decoding event log:", parseError, event);
                             continue;
                         }
 
-                        // Проверяем, что parsedEventData валиден и содержит необходимые свойства
+                        // Check that parsedEventData is valid and contains required properties
                         if (!parsedEventData || parsedEventData.kpiOwner === undefined || parsedEventData.kpiTypeId === undefined || parsedEventData.reportingYear === undefined || parsedEventData.value === undefined || parsedEventData.metadataCid === undefined) {
-                            console.warn("Разобранные данные события неполные или пустые, пропускаем проверку совпадения:", parsedEventData);
+                            console.warn("Parsed event data is incomplete or empty, skipping match check:", parsedEventData);
                             continue;
                         }
 
-                        // Конвертируем значения bigint в ethers.BigNumber для сравнения
+                        // Convert bigint values to ethers.BigNumber for comparison
                         const kpiTypeIdFromEvent = ethers.BigNumber.from(parsedEventData.kpiTypeId);
                         const reportingYearFromEvent = ethers.BigNumber.from(parsedEventData.reportingYear);
                         const valueFromEvent = ethers.BigNumber.from(parsedEventData.value);
                         const metadataCidFromEvent = parsedEventData.metadataCid;
 
-                        // --- ДЕТАЛЬНОЕ ЛОГИРОВАНИЕ СРАВНЕНИЙ ---
-                        console.log("--- Детальное сравнение параметров события ---");
-                        // 1. Сравнение kpiOwner - ИСПРАВЛЕНО
-                        // Ожидаемый адрес, дополненный нулями до 32 байт, для сравнения с топиком
+                        // --- DETAILED COMPARISON LOGGING ---
+                        console.log("--- Detailed Event Parameter Comparison ---");
+                        // 1. kpiOwner comparison - FIXED
+                        // Expected address, padded with zeros to 32 bytes, for comparison with topic
                         const expectedOwnerTopic = ethers.utils.hexZeroPad(ownerAddress.toLowerCase(), 32).toLowerCase();
                         const receivedKpiOwnerTopic = parsedEventData.kpiOwner.toLowerCase();
                         const ownerMatch = receivedKpiOwnerTopic === expectedOwnerTopic;
-                        console.log(`kpiOwner: Ожидалось (topic): ${expectedOwnerTopic}, Получено (topic): ${receivedKpiOwnerTopic}, Совпадение: ${ownerMatch}`);
+                        console.log(`kpiOwner: Expected (topic): ${expectedOwnerTopic}, Received (topic): ${receivedKpiOwnerTopic}, Match: ${ownerMatch}`);
 
-                        // 2. Сравнение kpiTypeId
+                        // 2. kpiTypeId comparison
                         const kpiTypeMatch = kpiTypeIdFromEvent.eq(expectedKpiTypeId);
-                        console.log(`kpiTypeId: Ожидалось: ${expectedKpiTypeId.toString()}, Получено: ${kpiTypeIdFromEvent.toString()}, Совпадение: ${kpiTypeMatch}`);
+                        console.log(`kpiTypeId: Expected: ${expectedKpiTypeId.toString()}, Received: ${kpiTypeIdFromEvent.toString()}, Match: ${kpiTypeMatch}`);
 
-                        // 3. Сравнение reportingYear
+                        // 3. reportingYear comparison
                         const yearMatch = reportingYearFromEvent.eq(expectedReportingYear);
-                        console.log(`reportingYear: Ожидалось: ${expectedReportingYear.toString()}, Получено: ${reportingYearFromEvent.toString()}, Совпадение: ${yearMatch}`);
+                        console.log(`reportingYear: Expected: ${expectedReportingYear.toString()}, Received: ${reportingYearFromEvent.toString()}, Match: ${yearMatch}`);
 
-                        // 4. Сравнение value
+                        // 4. value comparison
                         const valueMatch = valueFromEvent.eq(expectedValue);
-                        console.log(`value: Ожидалось: ${expectedValue.toString()}, Получено: ${valueFromEvent.toString()}, Совпадение: ${valueMatch}`);
+                        console.log(`value: Expected: ${expectedValue.toString()}, Received: ${valueFromEvent.toString()}, Match: ${valueMatch}`);
 
-                        // 5. Сравнение metadataCid
+                        // 5. metadataCid comparison
                         const cidMatch = metadataCidFromEvent.toLowerCase() === expectedMetadataCid.toLowerCase();
-                        console.log(`metadataCid: Ожидалось: ${expectedMetadataCid.toLowerCase()}, Получено: ${metadataCidFromEvent.toLowerCase()}, Совпадение: ${cidMatch}`);
+                        console.log(`metadataCid: Expected: ${expectedMetadataCid.toLowerCase()}, Received: ${metadataCidFromEvent.toLowerCase()}, Match: ${cidMatch}`);
                         console.log("---------------------------------------");
 
                         if (
@@ -208,30 +208,30 @@ function useKpiEventWatcher(contract: ThirdwebContract<typeof esgRegistryABI> | 
                             valueMatch &&
                             cidMatch
                         ) {
-                            console.log("ПОДХОДЯЩЕЕ событие KpiVersionSubmitted получено:", parsedEventData);
+                            console.log("MATCHING KpiVersionSubmitted event received:", parsedEventData);
                             cleanup();
                             resolve(parsedEventData);
                             return;
                         } else {
-                            console.log("Событие не соответствует ожидаемым параметрам.");
+                            console.log("Event does not match expected parameters.");
                         }
                     }
                 },
                 onError: (error) => {
-                    console.error("Ошибка при отслеживании событий KpiVersionSubmitted:", error);
+                    console.error("Error watching KpiVersionSubmitted events:", error);
                     cleanup();
                     reject(error);
                 }
             });
         });
-    }, [contract, contractInterface, kpiVersionSubmittedEventAbiFragment]); // Зависимости для useCallback
+    }, [contract, contractInterface, kpiVersionSubmittedEventAbiFragment]); // Dependencies for useCallback
 
     return waitForMatchingEvent;
 }
 
 /**
- * Хук для отправки KPI данных в контракт.
- * Инкапсулирует логику отправки транзакции и ожидания подтверждения события.
+ * Hook for submitting KPI data to the contract.
+ * Encapsulates transaction submission logic and event confirmation waiting.
  */
 function useKpiSubmission(contract: ThirdwebContract<typeof esgRegistryABI> | undefined, userAddress: string | null) {
     const { mutateAsync: sendTransactionMutation, isPending: isSendingTransaction } = useSendTransaction();
@@ -240,21 +240,21 @@ function useKpiSubmission(contract: ThirdwebContract<typeof esgRegistryABI> | un
     const submitKpiData = useCallback(async (
         kpiId: string,
         reportingYear: number,
-        currentValue: number, // Оригинальное числовое значение
-        priorValue: number // Оригинальное числовое значение
+        currentValue: number, // Original numeric value
+        priorValue: number // Original numeric value
     ) => {
         if (!userAddress) {
-            throw new Error("Необходимо подключить кошелек.");
+            throw new Error("Wallet must be connected.");
         }
         if (!contract) {
-            throw new Error("Контракт не инициализирован.");
+            throw new Error("Contract not initialized.");
         }
 
         const txPayloads: { prepared: PreparedTransaction; kpiTypeId: ethers.BigNumber; reportingYear: ethers.BigNumber; value: ethers.BigNumber; metadataCid: Hex }[] = [];
         const numericKpiTypeId = kpiIdToNumericIdMap[kpiId];
         const defaultMetadataCid: Hex = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-        // Добавляем транзакцию для текущего года
+        // Add transaction for the current year
         if (!isNaN(currentValue)) {
             const valueBN = ethers.BigNumber.from(Math.round(currentValue));
             const kpiTypeIdBN = ethers.BigNumber.from(numericKpiTypeId);
@@ -273,7 +273,7 @@ function useKpiSubmission(contract: ThirdwebContract<typeof esgRegistryABI> | un
             });
         }
 
-        // Добавляем транзакцию для предыдущего года
+        // Add transaction for the prior year
         if (!isNaN(priorValue)) {
             const valueBN = ethers.BigNumber.from(Math.round(priorValue));
             const kpiTypeIdBN = ethers.BigNumber.from(numericKpiTypeId);
@@ -293,13 +293,13 @@ function useKpiSubmission(contract: ThirdwebContract<typeof esgRegistryABI> | un
         }
 
         if (txPayloads.length === 0) {
-            throw new Error("Нет данных для отправки.");
+            throw new Error("No data to send.");
         }
 
         const results: KpiVersionSubmittedEventData[] = [];
         for (let i = 0; i < txPayloads.length; i++) {
             const payload = txPayloads[i];
-            console.log(`Подготовленный payload транзакции ${i + 1}:`, {
+            console.log(`Prepared transaction payload ${i + 1}:`, {
                 kpiTypeId: payload.kpiTypeId.toString(),
                 reportingYear: payload.reportingYear.toString(),
                 value: payload.value.toString(),
@@ -308,7 +308,7 @@ function useKpiSubmission(contract: ThirdwebContract<typeof esgRegistryABI> | un
 
             try {
                 const txResult: TransactionReceipt = await sendTransactionMutation(payload.prepared);
-                console.log(`Транзакция ${i + 1} отправлена. Хэш: ${txResult.transactionHash}. Ожидаем подтверждения события...`);
+                console.log(`Transaction ${i + 1} sent. Hash: ${txResult.transactionHash}. Awaiting event confirmation...`);
 
                 const confirmedEvent = await waitForMatchingEvent(
                     userAddress,
@@ -317,23 +317,23 @@ function useKpiSubmission(contract: ThirdwebContract<typeof esgRegistryABI> | un
                     payload.value,
                     payload.metadataCid
                 );
-                console.log(`Событие подтверждено для транзакции ${i + 1}.`);
+                console.log(`Event confirmed for transaction ${i + 1}.`);
                 results.push(confirmedEvent);
             } catch (err: any) {
-                console.error(`Ошибка при отправке или подтверждении события транзакции ${i + 1}:`, err);
-                throw err; // Перебрасываем ошибку для обработки на верхнем уровне
+                console.error(`Error sending or confirming transaction event ${i + 1}:`, err);
+                throw err; // Re-throw error for higher-level handling
             }
         }
         return results;
-    }, [contract, userAddress, sendTransactionMutation, waitForMatchingEvent]); // Зависимости для useCallback
+    }, [contract, userAddress, sendTransactionMutation, waitForMatchingEvent]); // Dependencies for useCallback
 
     return { submitKpiData, isSendingTransaction };
 }
 
-// --- РЕНДЕРИНГ КОМПОНЕНТОВ ФОРМЫ ---
+// --- FORM COMPONENT RENDERING ---
 /**
- * Универсальный рендерер полей категорий KPI.
- * Использует объект spec для динамического создания полей ввода.
+ * Universal KPI category field renderer.
+ * Uses the spec object to dynamically create input fields.
  */
 function KpiCategoryFormRenderer({
                                      categorySpec,
@@ -363,26 +363,26 @@ function KpiCategoryFormRenderer({
                         <input
                             type="number"
                             step="any"
-                            placeholder={`Текущий год (${selectedReportingYear}) (${kpi.unit})`}
+                            placeholder={`Current Year (${selectedReportingYear}) (${kpi.unit})`}
                             value={formDataForCategory[`${kpi.kpiId}_current`] || ""}
                             onChange={(e) => handleInputChange(kpi.kpiId, 'current', e.target.value)}
                             className="w-full flex-grow border border-zinc-700 bg-white/10 p-2.5 rounded-lg text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 outline-none"
                             data-tooltip-id={`tooltip-${categorySpec.internalName}-${kpi.kpiId}-current`}
                             disabled={isSubmitting}
                         />
-                        <Tooltip id={`tooltip-${categorySpec.internalName}-${kpi.kpiId}-current`} content={kpi.tooltipCurrent || `Введите ${kpi.label} для текущего года (${selectedReportingYear}).`} />
+                        <Tooltip id={`tooltip-${categorySpec.internalName}-${kpi.kpiId}-current`} content={kpi.tooltipCurrent || `Enter ${kpi.label} for the current year (${selectedReportingYear}).`} />
 
                         <input
                             type="number"
                             step="any"
-                            placeholder={`Предыдущий год (${selectedReportingYear - 1}) (${kpi.unit})`}
+                            placeholder={`Prior Year (${selectedReportingYear - 1}) (${kpi.unit})`}
                             value={formDataForCategory[`${kpi.kpiId}_prior`] || ""}
                             onChange={(e) => handleInputChange(kpi.kpiId, 'prior', e.target.value)}
                             className="w-full flex-grow border border-zinc-700 bg-white/10 p-2.5 rounded-lg text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 outline-none"
                             data-tooltip-id={`tooltip-${categorySpec.internalName}-${kpi.kpiId}-prior`}
                             disabled={isSubmitting}
                         />
-                        <Tooltip id={`tooltip-${categorySpec.internalName}-${kpi.kpiId}-prior`} content={kpi.tooltipPrior || `Введите ${kpi.label} для предыдущего года (${selectedReportingYear - 1}).`} />
+                        <Tooltip id={`tooltip-${categorySpec.internalName}-${kpi.kpiId}-prior`} content={kpi.tooltipPrior || `Enter ${kpi.label} for the prior year (${selectedReportingYear - 1}).`} />
                     </div>
                 </div>
             ))}
@@ -390,15 +390,15 @@ function KpiCategoryFormRenderer({
     );
 }
 
-// --- ГЛАВНЫЙ КОМПОНЕНТ СТРАНИЦЫ ---
+// --- MAIN PAGE COMPONENT ---
 export default function ForCompaniesPage() {
     const [userAddress, setUserAddress] = useState<string | null>(null);
     const [selectedReportingYear, setSelectedReportingYear] = useState<number>(new Date().getFullYear());
 
-    // Инициализация контракта через хук
+    // Contract initialization via hook
     const contract = useEsgContract();
 
-    // Обновленное начальное состояние формы: только для GHGEmissionsScopeOneAndTwoTotal
+    // Updated initial form state: only for GHGEmissionsScopeOneAndTwoTotal
     const initialGhGFormData = {
         GHGEmissionsScopeOneAndTwoTotal_current: "",
         GHGEmissionsScopeOneAndTwoTotal_prior: "",
@@ -409,45 +409,45 @@ export default function ForCompaniesPage() {
     const [submitting, setSubmitting] = useState(false);
     const [submissionStatus, setSubmissionStatus] = useState("");
 
-    // Хук для отправки данных KPI
+    // Hook for submitting KPI data
     const { submitKpiData, isSendingTransaction } = useKpiSubmission(contract, userAddress);
 
-    // Структура категорий: только один KPI для фокусировки
+    // Category structure: only one KPI for focus
     const categories = [
         {
             name: 'GHG Emission', internalName: 'ghgEmission',
             fields: [
-                { kpiId: 'GHGEmissionsScopeOneAndTwoTotal', label: 'GHG Emissions Scope 1 & 2 (Total)', unit: 'tCO2e', tooltipCurrent: 'Например, 5000.75 tCO2e.', tooltipPrior: 'Например, 5200.50 tCO2e.' },
+                { kpiId: 'GHGEmissionsScopeOneAndTwoTotal', label: 'GHG Emissions Scope 1 & 2 (Total)', unit: 'tCO2e', tooltipCurrent: 'e.g., 5000.75 tCO2e.', tooltipPrior: 'e.g., 5200.50 tCO2e.' },
             ],
-            additionalFields: [] // Удалены дополнительные поля для PoC
+            additionalFields: [] // Additional fields removed for PoC
         }
     ];
 
     const currentCategorySpec = categories[0];
 
-    // Обработчик отправки формы
+    // Form submission handler
     const handleSubmit = async (e?: React.MouseEvent<HTMLButtonElement>) => {
         if (e) e.preventDefault();
         setSubmissionStatus("");
 
         if (!userAddress) {
-            setSubmissionStatus("Ошибка: Пожалуйста, подключите ваш кошелек для отправки данных.");
+            setSubmissionStatus("Error: Please connect your wallet to submit data.");
             return;
         }
         if (!selectedReportingYear || selectedReportingYear < 1900 || selectedReportingYear > 2200) {
-            setSubmissionStatus("Ошибка: Пожалуйста, введите действительный отчетный год.");
+            setSubmissionStatus("Error: Please enter a valid reporting year.");
             return;
         }
         if (!contract) {
-            setSubmissionStatus("Ошибка: Контракт не загружен или не инициализирован. Пожалуйста, подождите.");
+            setSubmissionStatus("Error: Contract not loaded or initialized. Please wait.");
             return;
         }
 
         setSubmitting(true);
-        setSubmissionStatus("Подготовка данных для отправки...");
+        setSubmissionStatus("Preparing data for submission...");
 
         try {
-            const kpiKey = currentCategorySpec.fields[0].kpiId; // В нашем случае только один KPI
+            const kpiKey = currentCategorySpec.fields[0].kpiId; // In our case, only one KPI
             const currentValStr = formData.ghgEmission[`${kpiKey}_current`];
             const priorValStr = formData.ghgEmission[`${kpiKey}_prior`];
 
@@ -455,30 +455,30 @@ export default function ForCompaniesPage() {
             const priorVal = parseFloat(priorValStr);
 
             if (isNaN(currentVal) && isNaN(priorVal)) {
-                setSubmissionStatus("Нет введенных данных для отправки.");
+                setSubmissionStatus("No data entered for submission.");
                 setSubmitting(false);
                 return;
             }
 
-            // Вызываем хук для отправки данных
+            // Call the hook to submit data
             await submitKpiData(kpiKey, selectedReportingYear, currentVal, priorVal);
 
-            setSubmissionStatus(`Данные по ${currentCategorySpec.name} успешно отправлены! Форма очищена.`);
+            setSubmissionStatus(`Data for ${currentCategorySpec.name} successfully submitted! Form cleared.`);
             setFormData(prevData => ({
                 ...prevData,
                 [currentCategorySpec.internalName]: { ...initialGhGFormData }
             }));
 
         } catch (err: any) {
-            console.error("Ошибка в процессе отправки данных:", err);
-            let finalErrorMessage = (err instanceof Error) ? err.message : 'Произошла неизвестная ошибка при отправке.';
-            setSubmissionStatus(`Ошибка: ${finalErrorMessage}`);
+            console.error("Error during data submission:", err);
+            let finalErrorMessage = (err instanceof Error) ? err.message : 'An unknown error occurred during submission.';
+            setSubmissionStatus(`Error: ${finalErrorMessage}`);
         } finally {
             setSubmitting(false);
         }
     };
 
-    // Обновляем адрес пользователя при изменении активного аккаунта
+    // Update user address when active account changes
     const account = useActiveAccount();
     useEffect(() => {
         if (account && account.address) {
@@ -488,7 +488,7 @@ export default function ForCompaniesPage() {
         }
     }, [account]);
 
-    // Обновляем данные формы
+    // Update form data
     const handleGenericFormDataChange = (categoryInternalName: string, fieldKey: string, value: string) => {
         setFormData(prevData => ({
             ...prevData,
@@ -500,7 +500,7 @@ export default function ForCompaniesPage() {
     };
 
     return (
-        <div className="relative p-4 pb-20 min-h-screen container max-w-screen-lg mx-auto bg-gradient-to-br from-gray-900 to-blue-900 text-zinc-100 flex flex-col items-center justify-center">
+        <div className="relative p-4 pb-20 min-h-screen w-full mx-auto bg-gradient-to-br from-gray-900 to-blue-900 text-zinc-100 flex flex-col items-center justify-center">
             <div className="fixed top-6 left-6 z-50">
                 <a href="/" className="inline-block transform hover:scale-110 transition-transform duration-300">
                     <Image
@@ -519,21 +519,21 @@ export default function ForCompaniesPage() {
             <main className="w-full max-w-2xl p-6 md:p-10 bg-white/10 backdrop-blur-md shadow-2xl rounded-xl mt-24 mb-10">
                 <div className="text-center">
                     <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-6">
-                        Подача данных ESG компанией
+                        Company ESG Data Submission
                     </h1>
                     {userAddress ? (
                         <p className="text-zinc-300 text-sm mb-8">
-                            Подключенный адрес: <span className="font-mono bg-white/20 px-2 py-1 rounded text-xs">{userAddress}</span>
+                            Connected Address: <span className="font-mono bg-white/20 px-2 py-1 rounded text-xs">{userAddress}</span>
                         </p>
                     ) : (
-                        <p className="text-yellow-400 text-sm mb-8">Пожалуйста, подключите ваш кошелек для отправки данных.</p>
+                        <p className="text-yellow-400 text-sm mb-8">Please connect your wallet to submit data.</p>
                     )}
 
                     {currentCategorySpec ? (
                         <>
                             <div className="mb-6">
                                 <label htmlFor="reportingYearInput" className="block text-md font-semibold text-zinc-200 mb-2">
-                                    Выберите Отчетный Год (Текущий):
+                                    Select Reporting Year (Current):
                                 </label>
                                 <input
                                     type="number"
@@ -548,7 +548,7 @@ export default function ForCompaniesPage() {
                                         }
                                     }}
                                     className="w-full max-w-xs mx-auto border border-zinc-700 bg-white/10 p-2.5 rounded-lg text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 outline-none mb-6"
-                                    placeholder="ГГГГ"
+                                    placeholder="YYYY"
                                     min="1900"
                                     max="2200"
                                     disabled={submitting || isSendingTransaction}
@@ -562,7 +562,7 @@ export default function ForCompaniesPage() {
                                     onFormDataChange={handleGenericFormDataChange}
                                     isSubmitting={submitting || isSendingTransaction}
                                     selectedReportingYear={selectedReportingYear}
-                                    preloadedCidsOptions={preloadedCids} // Передаем опции для выпадающего списка
+                                    preloadedCidsOptions={preloadedCids} // Pass options for dropdown
                                 />
                                 <div className="w-full flex justify-center mt-6">
                                     <button
@@ -570,7 +570,7 @@ export default function ForCompaniesPage() {
                                         className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50"
                                         disabled={submitting || isSendingTransaction || !currentCategorySpec }
                                     >
-                                        {submitting || isSendingTransaction ? "Отправка..." : "Отправить данные по выбросам ПГ"}
+                                        {submitting || isSendingTransaction ? "Submitting..." : "Submit GHG Emissions Data"}
                                     </button>
                                 </div>
                             </div>
@@ -578,12 +578,12 @@ export default function ForCompaniesPage() {
                     ) : (
                         <div className="mt-8">
                             <p className="text-yellow-400 text-lg font-semibold">
-                                В настоящее время категория KPI не выбрана или недоступна.
+                                No KPI category selected or available at the moment.
                             </p>
                         </div>
                     )}
                     {submissionStatus && (
-                        <p className={`mt-6 text-sm ${submissionStatus.startsWith("Ошибка:") || submissionStatus.startsWith("Submission Error:") ? "text-red-400" : "text-green-400"}`}>
+                        <p className={`mt-6 text-sm ${submissionStatus.startsWith("Error:") || submissionStatus.startsWith("Submission Error:") ? "text-red-400" : "text-green-400"}`}>
                             {submissionStatus}
                         </p>
                     )}
