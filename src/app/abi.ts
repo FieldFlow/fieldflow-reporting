@@ -1,4 +1,4 @@
-export const abi = {
+const abi = {
     "_format": "hh-sol-artifact-1",
     "contractName": "VersionedPersonalESGRegistry",
     "sourceName": "contracts/ESGKPIReportingSystem.sol",
@@ -256,3 +256,5 @@ export const abi = {
     "linkReferences": {},
     "deployedLinkReferences": {}
 }
+
+export default abi;

@@ -13,7 +13,8 @@ import logoIcon from "../../../public/logo.svg";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 // Import the contract ABI used for data recording
-import { abi as esgRegistryABI } from '../abi';
+import contractABI from '../abi'; // Ensure the path is correct
+const esgRegistryABI = contractABI.abi as any[];
 
 // --- CONTRACT CONFIGURATION ---
 // Use environment variable for contract address
@@ -147,7 +148,7 @@ function KpiHistoryGraph({companyAddresses, kpi, currentReportingYear}: {company
                             }
 
                             if (kpiData && kpiData.value !== undefined) {
-                                // FIX: Convert bigint to Number for Recharts to process correctly.
+                                // Convert bigint to Number for Recharts to process correctly.
                                 // If the value from the contract is 0n, set it to undefined so Recharts skips it.
                                 const chartValue = kpiData.value === 0n ? undefined : Number(kpiData.value);
 
@@ -279,8 +280,7 @@ function KpiHistoryGraph({companyAddresses, kpi, currentReportingYear}: {company
                             stroke={COLORS[index % COLORS.length]}
                             activeDot={{ r: 8 }}
                             name={getShortAddress(address)}
-                            // Formatter is still here, but now it will receive a Number or undefined
-                            formatter={(value: number) => Number(value)}
+                            // Removed the 'formatter' prop as it's not a valid prop for Recharts Line component
                         />
                     ))}
                 </LineChart>
@@ -333,7 +333,7 @@ export default function ForInvestors() {
             <div className="fixed top-4 right-4 z-10">
                 <ConnectButton client={client} appMetadata={{
                     name: "FieldFlow - ESG KPI Reporting",
-                    url: "https://esg.fieldflow.lu"
+                    url: "https://esg.filedflow.lu"
                 }}/>
             </div>
             <main className="flex flex-col items-center justify-start min-h-full w-full py-10">

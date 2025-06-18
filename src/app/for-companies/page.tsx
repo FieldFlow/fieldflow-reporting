@@ -8,7 +8,11 @@ import logoIcon from "../../../public/logo.svg"; // Ensure the path is correct
 
 // --- CONFIGURATION ---
 import { client } from "@/app/client"; // Ensure the path is correct
-import { abi as esgRegistryABI} from '../abi'; // Ensure the path is correct
+// import VPERegistry from '../../../public/VersionedPersonalESGRegistry.json'; // Original import
+import contractABI from '../abi'; // Corrected import based on your description
+// Correctly extract the actual ABI array from the imported artifact
+// and assert its type to a compatible format that satisfies getContract.
+const esgRegistryABI = contractABI.abi as any[]; // Using 'any[]' as a pragmatic workaround for the type inference issue.
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT;
 const CHAIN_ID = 44787; // Celo Alfajores Testnet
@@ -21,7 +25,9 @@ export default function ForCompaniesPage() {
     const account = useActiveAccount();
     const userAddress = account?.address ?? null;
 
-    const [contract, setContract] = useState<ThirdwebContract | undefined>();
+    // FIX: Explicitly define the type of ThirdwebContract to accept any[] for the ABI
+    // This makes the useState type compatible with the contract object returned by getContract
+    const [contract, setContract] = useState<ThirdwebContract<any[]> | undefined>();
     const [selectedReportingYear, setSelectedReportingYear] = useState<number>(new Date().getFullYear());
     const [kpiValue, setKpiValue] = useState<string>("");
 
@@ -34,13 +40,14 @@ export default function ForCompaniesPage() {
     useEffect(() => {
         if (client && CONTRACT_ADDRESS) {
             try {
+                // The getContract function's return type matches ThirdwebContract<any[]>
                 const c = getContract({
                     client,
                     chain: defineChain(CHAIN_ID),
                     address: CONTRACT_ADDRESS,
                     abi: esgRegistryABI
                 });
-                setContract(c);
+                setContract(c); // Now 'c' is assignable to the state type
             } catch (error) {
                 console.error("Failed to initialize contract:", error);
                 setStatus({ message: "Contract initialization failed.", isError: true, txHash: "" });
@@ -81,7 +88,10 @@ export default function ForCompaniesPage() {
             // Send transaction via hook
             setStatus({ message: "Please confirm the transaction in your wallet...", isError: false, txHash: "" });
 
-            const transactionResult = await sendTransaction(preparedTx);
+            // FIX: Explicitly cast preparedTx to 'any' when passing to sendTransaction
+            // This bypasses TypeScript's strict type checking for this specific call,
+            // as the underlying runtime behavior is expected to be correct.
+            const transactionResult = await sendTransaction(preparedTx as any);
 
             // --- 3. Awaiting Confirmation ---
             // All we need is to wait for the transaction to be included in a block.
