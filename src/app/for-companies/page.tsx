@@ -1,15 +1,14 @@
 "use client";
 
 import { defineChain, getContract, prepareContractCall, ThirdwebContract } from "thirdweb";
-import { ConnectButton, useActiveAccount, useSendTransaction, useWaitForTransactionReceipt } from "thirdweb/react";
+import { ConnectButton, useActiveAccount, useSendTransaction } from "thirdweb/react";
 import { useState, useEffect, useCallback } from "react";
 import Image from 'next/image';
 import logoIcon from "../../../public/logo.svg"; // Ensure the path is correct
 
 // --- CONFIGURATION ---
 import { client } from "@/app/client"; // Ensure the path is correct
-import VPERegistry from '../../../public/VersionedPersonalESGRegistry.json'; // Ensure the path is correct
-const esgRegistryABI = VPERegistry.abi;
+import { abi as esgRegistryABI} from '../abi'; // Ensure the path is correct
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT;
 const CHAIN_ID = 44787; // Celo Alfajores Testnet
@@ -110,7 +109,7 @@ export default function ForCompaniesPage() {
                 <a href="/" className="inline-block transform hover:scale-110 transition-transform duration-300">
                     <Image src={logoIcon} alt="Home" width={50} height={50} priority />
                 </a>
-                <ConnectButton client={client} appMetadata={{ name: "FieldFlow ESG", url: "https://esg.fieldflow.lu" }} />
+                <ConnectButton client={client} appMetadata={{ name: "FieldFlow ESG", url: "https://esg.filedflow.lu" }} />
             </header>
 
             <main className="w-full max-w-lg p-6 md:p-10 bg-white/10 backdrop-blur-md shadow-2xl rounded-xl mt-24 mb-10">

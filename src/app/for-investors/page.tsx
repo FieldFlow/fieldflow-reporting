@@ -13,7 +13,7 @@ import logoIcon from "../../../public/logo.svg";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 // Import the contract ABI used for data recording
-import { abi as esgRegistryABI } from '../../../public/VersionedPersonalESGRegistry.json';
+import { abi as esgRegistryABI } from '../abi';
 
 // --- CONTRACT CONFIGURATION ---
 // Use environment variable for contract address
