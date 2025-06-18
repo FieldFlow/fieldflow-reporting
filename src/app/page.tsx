@@ -13,8 +13,8 @@ export default function Home() {
                 <ConnectButton
                     client={client}
                     appMetadata={{
-                        name: "FiledFlow - the ESG KPI Reporting System",
-                        url: "https://filedflow.lu",
+                        name: "ESG KPI Reporting System",
+                        url: "https://esg.filedflow.lu",
                     }}
                 />
             </div>
@@ -41,9 +41,10 @@ function Header() {
             />
 
             <h1 className="text-2xl md:text-6xl font-semibold md:font-bold tracking-tighter mb-6 text-zinc-100">
-                FiledFlow
-                <span className="text-zinc-300 inline-block mx-1">  +  </span>
-                <span className="inline-block -skew-x-6 text-blue-500"> ESG KPI </span>
+                <span className="text-zinc-300 inline-block mx-1">  </span>
+                <span className="inline-block -skew-x-6 text-blue-500">ESG</span>
+                <span className="text-zinc-300 inline-block mx-1">  </span>
+                Reporting
             </h1>
 
             <p className="text-zinc-300 text-base">
@@ -59,24 +60,25 @@ function Header() {
 
 function ThirdwebResources() {
     return (
-        <div className="grid gap-4 lg:grid-cols-3 justify-center">
+        <div className="grid gap-4 lg:grid-cols-2 justify-center">
             <ArticleCard
                 title="For Companies"
                 href="/for-companies"
-                description="Automate and streamline your ESG reporting process."
+                description="Report ESG KPIs"
             />
 
             <ArticleCard
                 title="For Investors"
                 href="/for-investors"
-                description="Ensure responsible and sustainable investments."
+                description="Compare companies"
             />
 
-            <ArticleCard
-                title="For People"
-                href="/for-people"
-                description="Assess ESG KPI data, processed by explainable AI."
-            />
+            {/*<ArticleCard*/}
+            {/*    disabled*/}
+            {/*    title="For People"*/}
+            {/*    href="/for-people"*/}
+            {/*    description="Assess ESG KPI data, processed by explainable AI."*/}
+            {/*/>*/}
         </div>
     );
 }

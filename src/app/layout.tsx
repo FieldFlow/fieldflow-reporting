@@ -6,9 +6,9 @@ import { ThirdwebProvider } from "thirdweb/react";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FieldFlow + ESG KPI",
+  title: "ESG Reporting",
   description:
-    "ESG KPI reporting for companies and investors",
+    "ESG KPI reporting systems for companies and investors",
     icons: {
         icon: "/favicon.svg",
     },
