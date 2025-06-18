@@ -4,19 +4,19 @@ import { defineChain, getContract, prepareContractCall, ThirdwebContract } from 
 import { ConnectButton, useActiveAccount, useSendTransaction, useWaitForTransactionReceipt } from "thirdweb/react";
 import { useState, useEffect, useCallback } from "react";
 import Image from 'next/image';
-import logoIcon from "../../../public/logo.svg"; // Убедитесь, что путь верный
+import logoIcon from "../../../public/logo.svg"; // Ensure the path is correct
 
-// --- КОНФИГУРАЦИЯ ---
-import { client } from "@/app/client"; // Убедитесь, что путь верный
-import VPERegistry from '../../../public/VersionedPersonalESGRegistry.json'; // Убедитесь, что путь верный
+// --- CONFIGURATION ---
+import { client } from "@/app/client"; // Ensure the path is correct
+import VPERegistry from '../../../public/VersionedPersonalESGRegistry.json'; // Ensure the path is correct
 const esgRegistryABI = VPERegistry.abi;
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT;
 const CHAIN_ID = 44787; // Celo Alfajores Testnet
-const KPI_ID_NUMERIC = 1; // Упрощено: ID для 'GHGEmissionsScopeOneAndTwoTotal'
+const KPI_ID_NUMERIC = 1; // Simplified: ID for 'GHGEmissionsScopeOneAndTwoTotal'
 
 /**
- * Основной компонент страницы
+ * Main page component for companies to submit ESG data.
  */
 export default function ForCompaniesPage() {
     const account = useActiveAccount();
@@ -28,10 +28,10 @@ export default function ForCompaniesPage() {
 
     const [status, setStatus] = useState({ message: "", isError: false, txHash: "" });
 
-    // Хук для отправки транзакции от Thirdweb
+    // Thirdweb hook for sending transactions
     const { mutateAsync: sendTransaction, isPending: isSubmitting } = useSendTransaction();
 
-    // --- 1. Инициализация контракта ---
+    // --- 1. Contract Initialization ---
     useEffect(() => {
         if (client && CONTRACT_ADDRESS) {
             try {
@@ -43,64 +43,64 @@ export default function ForCompaniesPage() {
                 });
                 setContract(c);
             } catch (error) {
-                console.error("Не удалось инициализировать контракт:", error);
-                setStatus({ message: "Ошибка инициализации контракта.", isError: true, txHash: "" });
+                console.error("Failed to initialize contract:", error);
+                setStatus({ message: "Contract initialization failed.", isError: true, txHash: "" });
             }
         }
     }, []);
 
-    // --- 2. Функция отправки данных ---
+    // --- 2. Data Submission Function ---
     const handleSubmit = async () => {
-        // Проверки перед отправкой
+        // Pre-submission checks
         if (!userAddress || !contract) {
-            setStatus({ message: "Кошелек не подключен или контракт не готов.", isError: true, txHash: "" });
+            setStatus({ message: "Wallet not connected or contract not ready.", isError: true, txHash: "" });
             return;
         }
         const numericValue = parseFloat(kpiValue);
         if (isNaN(numericValue) || kpiValue.trim() === "") {
-            setStatus({ message: "Введите корректное числовое значение KPI.", isError: true, txHash: "" });
+            setStatus({ message: "Please enter a valid numeric KPI value.", isError: true, txHash: "" });
             return;
         }
 
-        setStatus({ message: "Подготовка транзакции...", isError: false, txHash: "" });
+        setStatus({ message: "Preparing transaction...", isError: false, txHash: "" });
 
         try {
-            // Параметры для вызова функции контракта
+            // Parameters for contract function call
             const valueBigInt = BigInt(Math.round(numericValue));
             const reportingYearBigInt = BigInt(selectedReportingYear);
             const kpiTypeIdBigInt = BigInt(KPI_ID_NUMERIC);
-            // Это пустой CID, как и было в вашем коде
+            // This is an empty CID, as it was in your original code
             const defaultMetadataCid = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-            // Готовим вызов контракта
+            // Prepare contract call
             const preparedTx = prepareContractCall({
                 contract,
                 method: "submitKpiVersion",
                 params: [kpiTypeIdBigInt, reportingYearBigInt, valueBigInt, defaultMetadataCid]
             });
 
-            // Отправляем транзакцию через хук
-            setStatus({ message: "Пожалуйста, подтвердите транзакцию в вашем кошельке...", isError: false, txHash: "" });
+            // Send transaction via hook
+            setStatus({ message: "Please confirm the transaction in your wallet...", isError: false, txHash: "" });
 
             const transactionResult = await sendTransaction(preparedTx);
 
-            // --- 3. Ждем подтверждения ---
-            // Все, что нам нужно - это дождаться, когда транзакция попадет в блок.
-            // хук useSendTransaction уже делает это за нас. Когда await завершился, транзакция в сети.
+            // --- 3. Awaiting Confirmation ---
+            // All we need is to wait for the transaction to be included in a block.
+            // The useSendTransaction hook already handles this for us. When await completes, the transaction is on-chain.
 
-            console.log("Результат транзакции:", transactionResult);
+            console.log("Transaction result:", transactionResult);
             setStatus({
-                message: `Успех! Транзакция подтверждена.`,
+                message: `Success! Transaction confirmed.`,
                 isError: false,
                 txHash: transactionResult.transactionHash
             });
 
-            setKpiValue(""); // Очищаем поле ввода после успеха
+            setKpiValue(""); // Clear input field after success
 
         } catch (err) {
-            console.error("Ошибка во время отправки:", err);
-            const finalErrorMessage = (err instanceof Error) ? err.message : 'Произошла неизвестная ошибка.';
-            setStatus({ message: `Ошибка: ${finalErrorMessage}`, isError: true, txHash: "" });
+            console.error("Error during submission:", err);
+            const finalErrorMessage = (err instanceof Error) ? err.message : 'An unknown error occurred.';
+            setStatus({ message: `Error: ${finalErrorMessage}`, isError: true, txHash: "" });
         }
     };
 
@@ -115,17 +115,17 @@ export default function ForCompaniesPage() {
 
             <main className="w-full max-w-lg p-6 md:p-10 bg-white/10 backdrop-blur-md shadow-2xl rounded-xl mt-24 mb-10">
                 <div className="text-center">
-                    <h1 className="text-3xl md:text-4xl font-bold mb-6">Отправка ESG Данных</h1>
+                    <h1 className="text-3xl md:text-4xl font-bold mb-6">Submit ESG Data</h1>
                     {userAddress ? (
                         <p className="text-zinc-300 text-sm mb-8">
-                            Подключен: <span className="font-mono bg-white/20 px-2 py-1 rounded text-xs">{userAddress}</span>
+                            Connected: <span className="font-mono bg-white/20 px-2 py-1 rounded text-xs">{userAddress}</span>
                         </p>
                     ) : (
-                        <p className="text-yellow-400 text-sm mb-8">Пожалуйста, подключите кошелек.</p>
+                        <p className="text-yellow-400 text-sm mb-8">Please connect your wallet.</p>
                     )}
 
                     <div className="mb-6">
-                        <label htmlFor="reportingYearInput" className="block text-md font-semibold mb-2">Отчетный год:</label>
+                        <label htmlFor="reportingYearInput" className="block text-md font-semibold mb-2">Reporting Year:</label>
                         <input
                             type="number"
                             id="reportingYearInput"
@@ -141,7 +141,7 @@ export default function ForCompaniesPage() {
                         <input
                             type="number"
                             step="any"
-                            placeholder={`Значение для ${selectedReportingYear} года`}
+                            placeholder={`Value for ${selectedReportingYear} year`}
                             value={kpiValue}
                             onChange={(e) => setKpiValue(e.target.value)}
                             className="w-full flex-grow border border-zinc-700 bg-white/10 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
@@ -155,7 +155,7 @@ export default function ForCompaniesPage() {
                             className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={isSubmitting || !userAddress}
                         >
-                            {isSubmitting ? "Отправка..." : "Отправить данные в блокчейн"}
+                            {isSubmitting ? "Submitting..." : "Submit Data to Blockchain"}
                         </button>
                     </div>
 
@@ -171,7 +171,7 @@ export default function ForCompaniesPage() {
                                     rel="noopener noreferrer"
                                     className="text-blue-400 hover:underline text-xs mt-2 block"
                                 >
-                                    Посмотреть транзакцию
+                                    View Transaction
                                 </a>
                             )}
                         </div>
