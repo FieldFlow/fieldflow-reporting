@@ -103,7 +103,7 @@ const CustomTooltip = ({ active, payload, label, kpiUnit }: { active?: boolean; 
                             <p style={{ color: entry.stroke }} className="font-semibold text-base">{getShortAddress(companyAddress)}</p>
                             <p>Value: {decodedValue} {kpiUnit}</p>
                             <p>Updated: {submissionTimestamp}</p>
-                            <p>CID: {metadataCidFormatted}</p>
+                            {/*<p>CID: {metadataCidFormatted}</p>*/}
                         </div>
                     );
                 })}
